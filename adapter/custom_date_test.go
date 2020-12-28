@@ -7,11 +7,11 @@ import (
 	"os"
 	"testing"
 
+	"github.com/integration-system/isp-lib/v2/scripts"
 	"isp-script-service/adapter"
 	"isp-script-service/conf"
 	"isp-script-service/controller"
 	"isp-script-service/domain"
-	"isp-script-service/script"
 	"isp-script-service/service"
 
 	"github.com/integration-system/isp-lib/v2/config"
@@ -91,8 +91,9 @@ func BenchmarkJsCustomData(b *testing.B) {
 	if err != nil {
 		panic(err)
 	}
+	scriptMachine := scripts.NewMachine()
 	for i := 0; i < b.N; i++ {
-		_, _ = script.Default().Execute(scr, request.Arg)
+		_, _ = scriptMachine.Execute(scr, request.Arg)
 	}
 }
 
@@ -105,8 +106,9 @@ func BenchmarkInlineJson(b *testing.B) {
 	if err != nil {
 		panic(err)
 	}
+	scriptMachine := scripts.NewMachine()
 	for i := 0; i < b.N; i++ {
-		_, err := script.Default().Execute(c, string(data))
+		_, err := scriptMachine.Execute(c, string(data))
 		if err != nil {
 			panic(err)
 		}
@@ -123,12 +125,13 @@ func BenchmarkJsoniterJson(b *testing.B) {
 		panic(err)
 	}
 	json := jsoniter.ConfigFastest
+	scriptMachine := scripts.NewMachine()
 	for i := 0; i < b.N; i++ {
 		m := make(map[string]interface{})
 		if err := json.Unmarshal(data, &m); err != nil {
 			panic(err)
 		}
-		res, err := script.Default().Execute(c, m)
+		res, err := scriptMachine.Execute(c, m)
 		if err != nil {
 			panic(err)
 		}

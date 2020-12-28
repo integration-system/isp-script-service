@@ -5,10 +5,10 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/integration-system/isp-lib/v2/scripts"
 	log_code "isp-script-service/codes"
 	"isp-script-service/conf"
 	"isp-script-service/domain"
-	"isp-script-service/script"
 
 	"github.com/integration-system/isp-lib/v2/config"
 	log "github.com/integration-system/isp-log"
@@ -17,14 +17,17 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var Script = &scriptService{}
+var Script = &scriptService{
+	scriptMachine: scripts.NewMachine(),
+}
 
 type scriptService struct {
-	store atomic.Value
+	store         atomic.Value
+	scriptMachine *scripts.Machine
 }
 
 func (s *scriptService) ReceiveConfiguration(scriptDef []conf.ScriptDefinition) {
-	newStore := make(map[string]script.Script)
+	newStore := make(map[string]scripts.Script)
 	for i, value := range scriptDef {
 		scr, err := s.Create(value.Script)
 		if err != nil {
@@ -47,8 +50,8 @@ func (s *scriptService) Execute(req domain.ExecuteRequest) *domain.ScriptResp {
 }
 
 func (s *scriptService) ExecuteById(req domain.ExecuteByIdRequest) (*domain.ScriptResp, error) {
-	scr := s.store.Load().(map[string]script.Script)[req.Id]
-	if scr == nil {
+	scr, ok := s.store.Load().(map[string]scripts.Script)[req.Id]
+	if !ok {
 		return nil, status.Errorf(codes.NotFound, "not defined script for id %s", req.Id)
 	}
 
@@ -57,13 +60,13 @@ func (s *scriptService) ExecuteById(req domain.ExecuteByIdRequest) (*domain.Scri
 
 func (s *scriptService) BatchExecute(req []domain.ExecuteByIdRequest) []domain.ScriptResp {
 	wg := sync.WaitGroup{}
-	store := s.store.Load().(map[string]script.Script)
+	store := s.store.Load().(map[string]scripts.Script)
 	response := make([]domain.ScriptResp, len(req))
 	for i := range req {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			if store[req[i].Id] == nil {
+			if _, ok := store[req[i].Id]; !ok {
 				response[i] = *s.respError(errors.Errorf("not defined script for id %s", req[i].Id), domain.ErrorCompile)
 			} else {
 				response[i] = *s.executeScript(store[req[i].Id], req[i].Arg)
@@ -77,13 +80,13 @@ func (s *scriptService) BatchExecute(req []domain.ExecuteByIdRequest) []domain.S
 
 func (s *scriptService) BatchExecuteById(req domain.BatchExecuteByIdsRequest) []domain.ScriptResp {
 	wg := sync.WaitGroup{}
-	store := s.store.Load().(map[string]script.Script)
+	store := s.store.Load().(map[string]scripts.Script)
 	response := make([]domain.ScriptResp, len(req.Ids))
 	for i := range req.Ids {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			if store[req.Ids[i]] == nil {
+			if _, ok := store[req.Ids[i]]; !ok {
 				response[i] = *s.respError(errors.Errorf("not defined script for id %s", req.Ids[i]), domain.ErrorCompile)
 			} else {
 				response[i] = *s.executeScript(store[req.Ids[i]], req.Arg)
@@ -95,17 +98,17 @@ func (s *scriptService) BatchExecuteById(req domain.BatchExecuteByIdsRequest) []
 	return response
 }
 
-func (*scriptService) Create(scr string) (script.Script, error) {
+func (*scriptService) Create(scr string) (scripts.Script, error) {
 	cfg := config.GetRemote().(*conf.RemoteConfig)
-	scr = fmt.Sprintf("%s%s%s%s", cfg.SharedScript, "(function() {", scr, "})();")
+	fscr := []byte(fmt.Sprintf("%s%s%s", "(function() {\n", scr, "\n})();"))
 
-	return script.Default().Compile(scr)
+	return scripts.NewScript([]byte(cfg.SharedScript), fscr)
 }
 
 var errEmpty = errors.New("empty answer, maybe lost return")
 
-func (s *scriptService) executeScript(scr script.Script, arg interface{}) *domain.ScriptResp {
-	response, err := script.Default().Execute(scr, arg)
+func (s *scriptService) executeScript(scr scripts.Script, arg interface{}) *domain.ScriptResp {
+	response, err := s.scriptMachine.Execute(scr, arg)
 	if err != nil {
 		return s.respError(err, domain.ErrorRunTime)
 	}
