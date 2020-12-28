@@ -18,12 +18,12 @@ import (
 )
 
 var Script = &scriptService{
-	scriptMachine: scripts.NewEngine(),
+	scriptEngine: scripts.NewEngine(),
 }
 
 type scriptService struct {
-	store         atomic.Value
-	scriptMachine *scripts.Engine
+	store        atomic.Value
+	scriptEngine *scripts.Engine
 }
 
 func (s *scriptService) ReceiveConfiguration(scriptDef []conf.ScriptDefinition) {
@@ -108,7 +108,7 @@ func (*scriptService) Create(scr string) (scripts.Script, error) {
 var errEmpty = errors.New("empty answer, maybe lost return")
 
 func (s *scriptService) executeScript(scr scripts.Script, arg interface{}) *domain.ScriptResp {
-	response, err := s.scriptMachine.Execute(scr, arg)
+	response, err := s.scriptEngine.Execute(scr, arg)
 	if err != nil {
 		return s.respError(err, domain.ErrorRunTime)
 	}
