@@ -18,12 +18,12 @@ import (
 )
 
 var Script = &scriptService{
-	scriptMachine: scripts.NewMachine(),
+	scriptMachine: scripts.NewEngine(),
 }
 
 type scriptService struct {
 	store         atomic.Value
-	scriptMachine *scripts.Machine
+	scriptMachine *scripts.Engine
 }
 
 func (s *scriptService) ReceiveConfiguration(scriptDef []conf.ScriptDefinition) {

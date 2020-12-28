@@ -3,12 +3,10 @@ module isp-script-service
 go 1.13
 
 require (
-	github.com/dlclark/regexp2 v1.2.0 // indirect
-	github.com/dop251/goja v0.0.0-20200526165454-f1752421c432
+	github.com/dop251/goja v0.0.0-20201221183957-6b6d5e2b5d80
 	github.com/go-openapi/spec v0.19.9 // indirect
 	github.com/go-openapi/swag v0.19.9 // indirect
-	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
-	github.com/integration-system/isp-lib/v2 v2.7.0
+	github.com/integration-system/isp-lib/v2 v2.7.1-0.20201228144915-e38e9480a3ca
 	github.com/integration-system/isp-log v1.1.6
 	github.com/jmoiron/jsonq v0.0.0-20150511023944-e874b168d07e
 	github.com/json-iterator/go v1.1.10

@@ -91,7 +91,7 @@ func BenchmarkJsCustomData(b *testing.B) {
 	if err != nil {
 		panic(err)
 	}
-	scriptMachine := scripts.NewMachine()
+	scriptMachine := scripts.NewEngine()
 	for i := 0; i < b.N; i++ {
 		_, _ = scriptMachine.Execute(scr, request.Arg)
 	}
@@ -106,7 +106,7 @@ func BenchmarkInlineJson(b *testing.B) {
 	if err != nil {
 		panic(err)
 	}
-	scriptMachine := scripts.NewMachine()
+	scriptMachine := scripts.NewEngine()
 	for i := 0; i < b.N; i++ {
 		_, err := scriptMachine.Execute(c, string(data))
 		if err != nil {
@@ -125,7 +125,7 @@ func BenchmarkJsoniterJson(b *testing.B) {
 		panic(err)
 	}
 	json := jsoniter.ConfigFastest
-	scriptMachine := scripts.NewMachine()
+	scriptMachine := scripts.NewEngine()
 	for i := 0; i < b.N; i++ {
 		m := make(map[string]interface{})
 		if err := json.Unmarshal(data, &m); err != nil {
