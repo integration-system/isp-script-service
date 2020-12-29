@@ -1,3 +1,5 @@
+### v2.5.0
+* migrate from inbuilt wrapping of goja to new isp-lib/scripts package
 ### v2.4.1
 * updated isp-lib
 * updated isp-event-lib
