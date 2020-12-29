@@ -1,9 +1,9 @@
 package service
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/integration-system/isp-lib/v2/scripts"
 	log_code "isp-script-service/codes"
@@ -66,10 +66,10 @@ func (s *scriptService) BatchExecute(req []domain.ExecuteByIdRequest) []domain.S
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			if _, ok := store[req[i].Id]; !ok {
+			if scr, ok := store[req[i].Id]; !ok {
 				response[i] = *s.respError(errors.Errorf("not defined script for id %s", req[i].Id), domain.ErrorCompile)
 			} else {
-				response[i] = *s.executeScript(store[req[i].Id], req[i].Arg)
+				response[i] = *s.executeScript(scr, req[i].Arg)
 			}
 		}(i)
 	}
@@ -86,10 +86,10 @@ func (s *scriptService) BatchExecuteById(req domain.BatchExecuteByIdsRequest) []
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
-			if _, ok := store[req.Ids[i]]; !ok {
+			if scr, ok := store[req.Ids[i]]; !ok {
 				response[i] = *s.respError(errors.Errorf("not defined script for id %s", req.Ids[i]), domain.ErrorCompile)
 			} else {
-				response[i] = *s.executeScript(store[req.Ids[i]], req.Arg)
+				response[i] = *s.executeScript(scr, req.Arg)
 			}
 		}(i)
 	}
@@ -100,15 +100,17 @@ func (s *scriptService) BatchExecuteById(req domain.BatchExecuteByIdsRequest) []
 
 func (*scriptService) Create(scr string) (scripts.Script, error) {
 	cfg := config.GetRemote().(*conf.RemoteConfig)
-	fscr := []byte(fmt.Sprintf("%s%s%s", "(function() {\n", scr, "\n})();"))
 
-	return scripts.NewScript([]byte(cfg.SharedScript), fscr)
+	return scripts.NewScript([]byte(cfg.SharedScript),
+		[]byte("(function() {\n"), []byte(scr), []byte("\n})();"))
 }
 
 var errEmpty = errors.New("empty answer, maybe lost return")
 
 func (s *scriptService) executeScript(scr scripts.Script, arg interface{}) *domain.ScriptResp {
-	response, err := s.scriptEngine.Execute(scr, arg)
+	cfg := config.GetRemote().(*conf.RemoteConfig)
+	response, err := s.scriptEngine.Execute(scr, arg,
+		scripts.WithScriptTimeout(time.Duration(cfg.ScriptExecutionTimeoutMs)*time.Millisecond))
 	if err != nil {
 		return s.respError(err, domain.ErrorRunTime)
 	}
