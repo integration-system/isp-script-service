@@ -6,6 +6,7 @@ require (
 	github.com/dop251/goja v0.0.0-20201221183957-6b6d5e2b5d80
 	github.com/go-openapi/spec v0.19.9 // indirect
 	github.com/go-openapi/swag v0.19.9 // indirect
+	github.com/google/uuid v1.2.0
 	github.com/integration-system/isp-lib/v2 v2.8.3
 	github.com/integration-system/isp-log v1.1.6
 	github.com/jmoiron/jsonq v0.0.0-20150511023944-e874b168d07e

@@ -1,10 +1,14 @@
 package service
 
 import (
+	"crypto/sha256"
+	"crypto/sha512"
+	"encoding/hex"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/integration-system/isp-lib/v2/config"
 	"github.com/integration-system/isp-lib/v2/scripts"
 	log "github.com/integration-system/isp-log"
@@ -122,6 +126,9 @@ func (s *scriptService) executeScript(scr CompiledScript, arg interface{}) *doma
 	response, err := s.scriptEngine.Execute(scr.Script, arg,
 		scripts.WithScriptTimeout(time.Duration(cfg.ScriptExecutionTimeoutMs)*time.Millisecond),
 		scripts.WithSet("invoke", router.Invoke),
+		scripts.WithSet("sha256", Sha256),
+		scripts.WithSet("sha512", Sha512),
+		scripts.WithSet("gen_uuidv4", UUIDv4),
 	)
 	if err != nil {
 		return s.respError(err, domain.ErrorRunTime)
@@ -144,4 +151,23 @@ func (*scriptService) respError(err error, errorType string) *domain.ScriptResp 
 	return &domain.ScriptResp{
 		Error: &respError,
 	}
+}
+
+func Sha256(value string) string {
+	sum := sha256.Sum256([]byte(value))
+	return hex.EncodeToString(sum[:])
+}
+
+func Sha512(value string) string {
+	sum := sha512.Sum512([]byte(value))
+	return hex.EncodeToString(sum[:])
+}
+
+func UUIDv4() string {
+	randomUUID, err := uuid.NewRandom()
+	if err != nil {
+		// will be handled as exception in js
+		panic(err)
+	}
+	return randomUUID.String()
 }

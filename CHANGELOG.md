@@ -1,3 +1,5 @@
+### v2.5.5
+* add new functions for scripts: sha256, sha512, gen_uuidv4
 ### v2.5.4
 * fix: added missing "invoke" function to scripts
 ### v2.5.3
