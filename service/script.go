@@ -125,10 +125,14 @@ func (s *scriptService) executeScript(scr CompiledScript, arg interface{}) *doma
 	cfg := config.GetRemote().(*conf.RemoteConfig)
 	response, err := s.scriptEngine.Execute(scr.Script, arg,
 		scripts.WithScriptTimeout(time.Duration(cfg.ScriptExecutionTimeoutMs)*time.Millisecond),
+		// TODO: remove. invoke is deprecated, all functions should be inside `external` object
 		scripts.WithSet("invoke", router.Invoke),
-		scripts.WithSet("sha256", Sha256),
-		scripts.WithSet("sha512", Sha512),
-		scripts.WithSet("gen_uuidv4", UUIDv4),
+		scripts.WithSet("external", map[string]interface{}{
+			"invoke":         router.Invoke,
+			"hashSha256":     Sha256,
+			"hashSha512":     Sha512,
+			"generateUUIDv4": UUIDv4,
+		}),
 	)
 	if err != nil {
 		return s.respError(err, domain.ErrorRunTime)
